@@ -1,5 +1,8 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import requests
+from requests.auth import HTTPBasicAuth
+from supabase import create_client, Client
 
 app = Flask(__name__)
 CORS(app)  # ← Habilita CORS en todo
