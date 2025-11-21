@@ -10,5 +10,5 @@ def home():
 def ranking():
     body = request.get_json()
     eventCode = body.get("eventCode")
-    return eventoCode
+    return eventCode
 
