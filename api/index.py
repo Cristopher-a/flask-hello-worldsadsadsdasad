@@ -33,7 +33,7 @@ def ranking():
         for m in matches:
             key = (m["team_number"], m["regional"])
             pit = pits_index.get(key, {})
-            unidos.append({**m, **pit})
+            unidos.append({**pit, **m})
 
         # -------------------------
         # 3️⃣ Calcular score por match
@@ -54,7 +54,7 @@ def ranking():
                 try:
                     total += float(row.get(col, 0) or 0)
                 except:
-                    pass
+                    total += 0
             row["score"] = total
 
         # -------------------------
@@ -68,35 +68,53 @@ def ranking():
                     "team_number": t,
                     "score_list": [],
                     "auto_in": 0,
-                    "teleop_in": 0
+                    "teleop_in": 0,
                 }
 
             teams[t]["score_list"].append(row["score"])
             teams[t]["auto_in"] += float(row.get("count_in_cage_auto", 0) or 0)
             teams[t]["teleop_in"] += float(row.get("count_in_cage_teleop", 0) or 0)
 
+        # Score promedio por equipo
         for t in teams.values():
-            t["score"] = round(sum(t["score_list"]) / len(t["score_list"]), 2)
+            scores = t["score_list"]
+            t["score"] = round(sum(scores) / len(scores), 2) if scores else 0
 
         # -------------------------
-        # 5️⃣ Ranking FTC (HTTP)
+        # 5️⃣ Ranking FTC (API segura)
         # -------------------------
         def ftc_rank(team, eventCode):
             try:
-                url = f"http://ftc-api.firstinspires.org/v2.0/2024/rankings/{eventCode}"
-                r = requests.get(url, auth=HTTPBasicAuth(
-                    "crisesv4",
-                    "E936A6EC-14B0-4904-8DF4-E4916CA4E9BB"
-                ))
-                r.raise_for_status()
+                url = f"http://ftc-api.firstinspires.org/v2.0/2025/rankings/{eventCode}"
+                r = requests.get(
+                    url,
+                    auth=HTTPBasicAuth(
+                        "crisesv4",
+                        "E936A6EC-14B0-4904-8DF4-E4916CA4E9BB"
+                    )
+                )
 
-                ranks = r.json().get("rankings", [])
+                print("URL:", url)
+                print("STATUS:", r.status_code)
+                print("BODY:", r.text[:200])  # solo primeros 200 caracteres
+
+                if r.status_code != 200:
+                    return None
+
+                data = r.json()
+                ranks = data.get("rankings")
+                if not isinstance(ranks, list):
+                    print("FORMATO INVALIDO DE RANKINGS", ranks)
+                    return None
+
                 for item in ranks:
-                    if item["teamNumber"] == team:
+                    if item.get("teamNumber") == team:
                         return item.get("rank")
+
             except Exception as e:
                 print("FTC ERROR:", e)
                 return None
+
             return None
 
         for t in teams.values():
@@ -106,12 +124,24 @@ def ranking():
         # 6️⃣ Calcular alliance_score
         # -------------------------
         for t in teams.values():
-            eff = (t["auto_in"] + t["teleop_in"]) / (t["score"] + 1)
-            frs = 1 / t["ftc_rank"] if t["ftc_rank"] else 0
-            t["alliance_score"] = t["score"] * 0.6 + eff * 0.3 + frs * 0.1
+            auto = t["auto_in"]
+            tele = t["teleop_in"]
+            score = t["score"]
+
+            # Eficiencia segura
+            eff = (auto + tele) / (score + 1)
+
+            # FTC rank seguro
+            rank = t["ftc_rank"]
+            if isinstance(rank, (int, float)) and rank > 0:
+                frs = 1 / rank
+            else:
+                frs = 0
+
+            t["alliance_score"] = round(score * 0.6 + eff * 0.3 + frs * 0.1, 4)
 
         # -------------------------
-        # 7️⃣ Ordenar
+        # 7️⃣ Ordenar y regresar
         # -------------------------
         result = sorted(
             teams.values(),
@@ -125,7 +155,5 @@ def ranking():
         import traceback
         tb = traceback.format_exc()
         print("ERROR:\n", tb)
-        return jsonify({
-            "error": str(e),
-            "traceback": tb
-        }), 500
+        return jsonify({"error": str(e), "traceback": tb}), 500
+
