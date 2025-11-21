@@ -4,6 +4,10 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)  # ← Habilita CORS en todo
 
+SUPABASE_URL = "https://rhttqmtzcmwilzshnxwq.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJodHRxbXR6Y213aWx6c2hueHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1OTUwOTAsImV4cCI6MjA3OTE3MTA5MH0.8dYvM8CBEdqiF9ZZhaYRKhtOin_wYGf4JYrmTTIsX74"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 @app.route('/')
 def home():
     return 'Hello, World!'
