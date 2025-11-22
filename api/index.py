@@ -16,36 +16,18 @@ def home():
 @app.route("/ranking", methods=["POST"])
 def ranking():
     body = request.get_json()
-    eventoCode = body.get("eventCode")
-     if not eventoCode:
-        return jsonify({"error": "eventCode requerido"}), 400
+    eventCode = body.get("eventCode")
 
-     code_map = {
-            "CDMX": "MXTLQ",
-            "Cuautitlán": "MXCIQ",
-            # agrega más si los necesitas
-        }
-        eventCode = code_map.get(eventoCode)
+    if not eventCode:
+        return jsonify({"error": "eventCode requerido"}), 400
 
     try:
         # -------------------------
         # 1️⃣ Cargar datos de Supabase
         # -------------------------
-        pits = (
-    supabase.table("pits")
-    .select("*")
-    .eq("eventCode", eventoCode)
-    .execute()
-    .data or []
-)
+        pits = supabase.table("pits").select("*").execute().data or []
+        matches = supabase.table("matches").select("*").execute().data or []
 
-matches = (
-    supabase.table("matches")
-    .select("*")
-    .eq("eventCode", eventoCode)
-    .execute()
-    .data or []
-)
         if not pits or not matches:
             return jsonify([])
 
