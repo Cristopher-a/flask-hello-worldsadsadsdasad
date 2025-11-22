@@ -25,8 +25,8 @@ def ranking():
         # -------------------------
         # 1️⃣ Cargar datos de Supabase
         # -------------------------
-        pits = supabase.table("pit_scouting").select("*").execute().data or []
-        matches = supabase.table("match_scouting").select("*").execute().data or []
+        pits = supabase.table("pits").select("*").execute().data or []
+        matches = supabase.table("matches").select("*").execute().data or []
 
         if not pits or not matches:
             return jsonify([])
